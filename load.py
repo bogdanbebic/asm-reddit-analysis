@@ -1,3 +1,4 @@
+from functools import reduce
 import pandas as pd
 import numpy as np
 import os
@@ -11,7 +12,7 @@ submission_FileNames = os.listdir(submission_dataPath)
 comments_FileNames= os.listdir(comments_dataPath)
 
 # Func: Read data from Comment datasets
-def loadCommentDataSet():
+def loadDataSet(filePath, fileNames):
     
     # Array of all Subreddit Ids
     allSubredditId = []
@@ -19,9 +20,9 @@ def loadCommentDataSet():
     # Array with authors and their subreddit_ids
     totalAuthorsWitjSubredditId = pd.DataFrame([])
 
-    for fileName in submission_FileNames:
+    for fileName in fileNames:
         # Read file
-        commentData = pd.read_csv(comments_dataPath + fileName)
+        commentData = pd.read_csv(filePath + fileName)
         # Only uniqe subreddit_id 
         subredditId = commentData["subreddit_id"].unique()
         # Author with subreddit_id 
@@ -36,36 +37,22 @@ def loadCommentDataSet():
     # It is possible to have "[deleted]" as authir name
     # Remove all deleted author data
     filter = totalAuthorsWitjSubredditId['author']!="[deleted]"
-    allAuthorsWitjSubredditId = totalAuthorsWitjSubredditId[filter]
+    allAuthorsWithSubredditId = totalAuthorsWitjSubredditId[filter]
+   
+    return [allSubredditId, allAuthorsWithSubredditId]
 
-    print(f"Number of different subreddit Ids from Comments dataset is {len(allSubredditId)}")
-    print(f"Is the subbredit id set unique? {len(set(allSubredditId)) == len(allSubredditId)}")
-    print(f"Number of authors with subreddit Ids from Comments dataset is {len(allAuthorsWitjSubredditId)}")
+def loadData():
+    
+    submissionData = loadDataSet(submission_dataPath, submission_FileNames)
+    commentsData = loadDataSet(comments_dataPath, comments_FileNames)
 
-    return [allSubredditId, allAuthorsWitjSubredditId]
+    allSubredditId = np.union1d(submissionData[0], commentsData[0])
+    allAuthorsWithSubredditId =  pd.concat([submissionData[1], commentsData[1]])
+    allAuthorsWithSubredditId = allAuthorsWithSubredditId.groupby(["author", "subreddit_id"])
+    
+    print(f"Number of different subreddit Ids is {len(allSubredditId)}")
+    print(f"Number of authors with subreddit Ids from Comments dataset is {len(allAuthorsWithSubredditId)}")
 
-# Func: Load data from Submission dataset 
-def loadSubmissionDataSet():
+    return [allSubredditId, allAuthorsWithSubredditId]
+    
 
-    # Array of all Subreddit Ids
-    allSubredditId = []
-
-    for fileName in comments_FileNames:
-        # Read file
-        commentData = pd.read_csv(submission_dataPath + fileName)
-        # Only uniqe subreddit_id 
-        subredditId = commentData["subreddit_id"].unique()
-        # Author with subreddit_id 
-        subreddit_comment_author = commentData[["author", "subreddit_id"]]
-
-        # Merege all subredditIds
-        allSubredditId = np.union1d(allSubredditId, subredditId)
-
-    print(f"Number of different subreddit Ids from Comments dataset is {len(allSubredditId)}")
-    return allSubredditId
-
-rsl = loadCommentDataSet()
-b = loadSubmissionDataSet()
-
-a = np.union1d(rsl[0], b)
-print(f"*** Total number of nodes: {len(a)}")
