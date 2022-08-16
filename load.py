@@ -10,6 +10,7 @@ comments_dataPath = "ASM_PZ2_podaci_2122/reddit2008/comments_2008_asm_v1.1/comme
 submission_FileNames = os.listdir(submission_dataPath)
 comments_FileNames= os.listdir(comments_dataPath)
 
+# Func: Read data from Comment datasets
 def loadCommentDataSet():
     
     # Array of all Subreddit Ids
@@ -18,7 +19,7 @@ def loadCommentDataSet():
     # Array with authors and their subreddit_ids
     totalAuthorsWitjSubredditId = pd.DataFrame([])
 
-    for fileName in comments_FileNames:
+    for fileName in submission_FileNames:
         # Read file
         commentData = pd.read_csv(comments_dataPath + fileName)
         # Only uniqe subreddit_id 
@@ -43,4 +44,28 @@ def loadCommentDataSet():
 
     return [allSubredditId, allAuthorsWitjSubredditId]
 
+# Func: Load data from Submission dataset 
+def loadSubmissionDataSet():
+
+    # Array of all Subreddit Ids
+    allSubredditId = []
+
+    for fileName in comments_FileNames:
+        # Read file
+        commentData = pd.read_csv(submission_dataPath + fileName)
+        # Only uniqe subreddit_id 
+        subredditId = commentData["subreddit_id"].unique()
+        # Author with subreddit_id 
+        subreddit_comment_author = commentData[["author", "subreddit_id"]]
+
+        # Merege all subredditIds
+        allSubredditId = np.union1d(allSubredditId, subredditId)
+
+    print(f"Number of different subreddit Ids from Comments dataset is {len(allSubredditId)}")
+    return allSubredditId
+
 rsl = loadCommentDataSet()
+b = loadSubmissionDataSet()
+
+a = np.union1d(rsl[0], b)
+print(f"*** Total number of nodes: {len(a)}")
