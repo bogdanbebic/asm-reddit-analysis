@@ -127,3 +127,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# CSV files with dataset
+ASM_PZ2_podaci_2122/**/*.csv
