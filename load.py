@@ -1,4 +1,5 @@
 from functools import reduce
+from unicodedata import name
 import pandas as pd
 import numpy as np
 import os
@@ -15,51 +16,61 @@ comments_FileNames = os.listdir(comments_dataPath)
 
 # Func: Read data from Comment datasets
 def loadDataSet(filePath, fileNames):
-
-    # Array of all Subreddit Ids
-    allSubredditId = []
-
     # Array with authors and their subreddit_ids
-    totalAuthorsWitjSubredditId = pd.DataFrame([])
-
+    allFileData = pd.DataFrame([])
     for fileName in fileNames:
         # Read file
-        commentData = pd.read_csv(filePath + fileName)
-        # Only uniqe subreddit_id
-        subredditId = commentData["subreddit_id"].unique()
-        # Author with subreddit_id
-        subreddit_comment_author = commentData[["author", "subreddit_id"]]
+        singleFileData = pd.read_csv(filePath + fileName)
+        allFileData = pd.concat([allFileData, singleFileData])
 
-        # Merege all subredditIds
-        allSubredditId = np.union1d(allSubredditId, subredditId)
+    # Only unique subreddit_id
+    subredditId = allFileData["subreddit_id"].unique()
+    # Author with subreddit_id
+    subreddit_comment_author = allFileData[["author", "subreddit_id"]]
 
-        # Concatenate all authors and subreddit_ids
-        totalAuthorsWitjSubredditId = pd.concat(
-            [totalAuthorsWitjSubredditId, subreddit_comment_author]
-        )
-
-    # It is possible to have "[deleted]" as authir name
+    # It is possible to have "[deleted]" as author name
     # Remove all deleted author data
-    filter = totalAuthorsWitjSubredditId["author"] != "[deleted]"
-    allAuthorsWithSubredditId = totalAuthorsWitjSubredditId[filter]
+    filter = subreddit_comment_author["author"] != "[deleted]"
+    allAuthorsWithSubredditId = allFileData[filter]
 
-    return [allSubredditId, allAuthorsWithSubredditId]
+    return [subredditId, allAuthorsWithSubredditId]
+
+submissionData = loadDataSet(submission_dataPath, submission_FileNames)
+commentsData = loadDataSet(comments_dataPath, comments_FileNames)
+
+allSubredditId = np.union1d(submissionData[0], commentsData[0])
+print(f"Number of different subreddit Ids is {len(allSubredditId)}")
+
+# count comments per subreddit ID
+group = commentsData[1].groupby(["subreddit_id"])
+counts = group.size().reset_index(name="counts")
+sorted_counts = counts.sort_values("counts", ascending=False)
+print(sorted_counts[:10])
+
+# count users per subreddit ID
+allAuthorsWithSubredditId = pd.concat([submissionData[1], commentsData[1]])
+groupSubredditAuthor = allAuthorsWithSubredditId.groupby(
+    ["subreddit_id", "author"]
+)
+countsSubredditAuthor = groupSubredditAuthor.size().reset_index(name="counts")
+# subredditId - author - countInteractions
+# subredditId - countAuthors
+authorsPerSubreddit = countsSubredditAuthor.groupby(["subreddit_id"]).size().reset_index(name="counts")
+print(authorsPerSubreddit.sort_values("counts", ascending=False)[:10])
+
+print("AVG number users per subreddit:")
+print(authorsPerSubreddit['counts'].sum() / len(allSubredditId))
+
+# sorted_countsSubredditAuthor = countsSubredditAuthor.sort_values("counts", ascending=False)
+# print(sorted_countsSubredditAuthor[:10])
 
 
-def loadData():
+print(f"Max submissions per author {submissionData[1].groupby(['author']).size().reset_index(name='counts').sort_values('counts', ascending=False)[:10]}")
+print(f"Max comments per author {commentsData[1].groupby(['author']).size().reset_index(name='counts').sort_values('counts', ascending=False)[:10]}")
 
-    submissionData = loadDataSet(submission_dataPath, submission_FileNames)
-    commentsData = loadDataSet(comments_dataPath, comments_FileNames)
+countsAuthorSubreddit = allAuthorsWithSubredditId.groupby(['author', 'subreddit_id']).size().reset_index(name='counts')
+# author - subreddit - count interactions
+# author - count subreddits
+subredditsPerAuthor = countsAuthorSubreddit.groupby(['author']).size().reset_index(name='counts')
+print(subredditsPerAuthor.sort_values('counts', ascending=False)[:10])
 
-    allSubredditId = np.union1d(submissionData[0], commentsData[0])
-    allAuthorsWithSubredditId = pd.concat([submissionData[1], commentsData[1]])
-    allAuthorsWithSubredditId = allAuthorsWithSubredditId.groupby(
-        ["author", "subreddit_id"]
-    )
-
-    print(f"Number of different subreddit Ids is {len(allSubredditId)}")
-    print(
-        f"Number of authors with subreddit Ids from Comments dataset is {len(allAuthorsWithSubredditId)}"
-    )
-
-    return [allSubredditId, allAuthorsWithSubredditId]
