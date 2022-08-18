@@ -25,15 +25,12 @@ def loadDataSet(filePath, fileNames):
 
     # Only unique subreddit_id
     subredditId = allFileData["subreddit_id"].unique()
-    # Author with subreddit_id
-    subreddit_comment_author = allFileData[["author", "subreddit_id"]]
 
     # It is possible to have "[deleted]" as author name
     # Remove all deleted author data
-    filter = subreddit_comment_author["author"] != "[deleted]"
-    allAuthorsWithSubredditId = allFileData[filter]
+    filtered = allFileData["author"] != "[deleted]"
 
-    return [subredditId, allAuthorsWithSubredditId]
+    return [subredditId, allFileData[filtered]]
 
 submissionData = loadDataSet(submission_dataPath, submission_FileNames)
 commentsData = loadDataSet(comments_dataPath, comments_FileNames)
