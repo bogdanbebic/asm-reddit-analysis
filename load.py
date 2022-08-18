@@ -17,6 +17,14 @@ def loadDataSet(folderPath):
     return allFileData
 
 
+def groupby_count(data_frame, groupby_list):
+    return data_frame.groupby(groupby_list).size().reset_index(name="counts")
+
+
+def groupby_count_sorted(data_frame, groupby_list):
+    return groupby_count(data_frame, groupby_list).sort_values('counts', ascending=False)
+
+
 submissionData = loadDataSet(submission_dataPath)
 commentsData = loadDataSet(comments_dataPath)
 
@@ -32,25 +40,25 @@ filteredComments = commentsData[commentsFilter]
 
 allData = pd.concat([filteredSubmissions, filteredComments])
 
-commentsPerSubreddit = commentsData.groupby(["subreddit_id"]).size().reset_index(name="counts")
-print(commentsPerSubreddit.sort_values("counts", ascending=False)[:10])
+commentsPerSubreddit = groupby_count_sorted(commentsData, ["subreddit_id"])
+print(f"Comments per subreddit:\n{commentsPerSubreddit[:10]}")
 
 # count users per subreddit ID
 # subredditId - author - countInteractions
-interactionsPerAuthorPerSubreddit = allData.groupby(["subreddit_id", "author"]).size().reset_index(name="counts")
+interactionsPerAuthorPerSubreddit = groupby_count(allData, ["subreddit_id", "author"])
 # subredditId - countAuthors
-authorsPerSubreddit = interactionsPerAuthorPerSubreddit.groupby(["subreddit_id"]).size().reset_index(name="counts")
-print(authorsPerSubreddit.sort_values("counts", ascending=False)[:10])
+authorsPerSubreddit = groupby_count_sorted(interactionsPerAuthorPerSubreddit, ["subreddit_id"])
+print(f"Authors per subreddit:\n{authorsPerSubreddit[:10]}")
 
 print(f"AVG number users per subreddit:\n{authorsPerSubreddit['counts'].sum() / len(allSubredditIds)}")
 
-submissionsPerAuthor = filteredSubmissions.groupby(['author']).size().reset_index(name='counts')
-commentsPerAuthor = filteredComments.groupby(['author']).size().reset_index(name='counts')
-print(f"Max submissions per author:\n{submissionsPerAuthor.sort_values('counts', ascending=False)[:10]}")
-print(f"Max comments per author:\n{commentsPerAuthor.sort_values('counts', ascending=False)[:10]}")
+submissionsPerAuthor = groupby_count_sorted(filteredSubmissions, ['author'])
+commentsPerAuthor = groupby_count_sorted(filteredComments, ['author'])
+print(f"Max submissions per author:\n{submissionsPerAuthor[:10]}")
+print(f"Max comments per author:\n{commentsPerAuthor[:10]}")
 
 # author - subreddit - count interactions
-interactionsPerSubredditPerAuthor = allData.groupby(['author', 'subreddit_id']).size().reset_index(name='counts')
+interactionsPerSubredditPerAuthor = groupby_count(allData, ['author', 'subreddit_id'])
 # author - count subreddits
-subredditsPerAuthor = interactionsPerSubredditPerAuthor.groupby(['author']).size().reset_index(name='counts')
-print(f"Subreddits per author:\n{subredditsPerAuthor.sort_values('counts', ascending=False)[:10]}")
+subredditsPerAuthor = groupby_count_sorted(interactionsPerSubredditPerAuthor, ['author'])
+print(f"Subreddits per author:\n{subredditsPerAuthor[:10]}")
