@@ -130,3 +130,6 @@ dmypy.json
 
 # CSV files with dataset
 ASM_PZ2_podaci_2122/**/*.csv
+
+# Large network gml files
+usernet.gml
